@@ -29,6 +29,45 @@ util.mock('[resources] listInstances error', function(assert) {
     });
 });
 
+util.mock('[resources] listInstances error causes resources.available to hang', function(assert) {
+  var cluster = 'arn:aws:ecs:us-east-1:123456789012:cluster/fake';
+  var taskDef = 'arn:aws:ecs:us-east-1:123456789012:task-definition/fake:1';
+  var context = this;
+
+  context.ecs.failInstances = true;
+
+  var resources = watchbot.resources(cluster, taskDef)
+    .on('error', function(err) {
+      assert.equal(err.message, 'Mock ECS error', 'expected error emitted');
+    });
+
+  resources.available(function(err) {
+    console.log('ever here?');
+    if (err) assert.end(err);
+
+    assert.deepEqual(resources.status, {
+      instances: ['arn:aws:ecs:us-east-1:1234567890:some/fake'],
+      availableInstances: [
+        {
+          registeredResources: [
+            { integerValue: 100, name: 'CPU' },
+            { integerValue: 100, name: 'MEMORY' }
+          ],
+          remainingResources: [
+            { integerValue: 100, name: 'CPU' },
+            { integerValue: 100, name: 'MEMORY' }
+          ]
+        }
+      ],
+      registered: { cpu: 100, memory: 100 },
+      available: { cpu: 100, memory: 100 },
+      required: { cpu: 0, memory: 5 }
+    }, 'collected expected resource info');
+
+    assert.end();
+  });
+});
+
 util.mock('[resources] listInstances pagination', function(assert) {
   var cluster = 'arn:aws:ecs:us-east-1:123456789012:cluster/fake';
   var taskDef = 'arn:aws:ecs:us-east-1:123456789012:task-definition/fake:1';
