@@ -309,3 +309,16 @@ A JavaScript module is also available as a mechanism for progress reporting.
 ```js
 var progress = require('@mapbox/watchbot').progress();
 ```
+
+### Custom metrics
+
+If logs are set up to go to cloudwatch, there are a few metrics under the namespace `Mapbox/ecs-watchbot` set up from filters on those logs that can help you learn about the state of your watchbot stack.
+
+|Metric|Description|
+|---|---|
+|`FailedTaskPlacement-{StackName}`|The total number of times a watcher had difficulty placing a task on the cluster - This probably means your concurrency is too high, your reservations are too high, or your cluster is too small. **Statistics** the most useful statistic is `Sum`|
+|`WorkerErrors-{StackName}`|The total number of failed watchbot jobs per minute. High levels of this error trigger the `WorkerErrors` alarm, which can be configured in the cloudformation template. **Statistics** the most useful statistic is `Sum`|
+|`ApproximateReceivesCount-{StackName}`|A metric collected for every received message that indicates how many times the message has been pulled from the queue. **Statistics** the most useful statistic is `Maximum`|
+|`MaxConcurrency-{StackName}`|The maximum concurrency per watcher set in the cloudformation template. **Statistic** the most useful statistic is `Average` or `Maximum`|
+|`RunningWorkersPerWatcher-{StackName}`|The number of workers running per watcher. **Statistic** `Sum` can be useful to determine the number of workers on the cluster, while `Average` can indicate whether the watchers are approaching `MaxConcurrency`|
+|`WorkerDuration-{StackName}`|The amount of time taken by a worker to run a task. **Statistics** `Average`, `Minimum` and `Maximum` can be illuminating when deciding timeout values for SQS messages.
